@@ -1,0 +1,1022 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Video HD Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root{
+        --bg:#f4f4f1;
+        --panel:#ffffff;
+        --panel-2:#ecece8;
+        --ink:#17181c;
+        --muted:#5c6068;
+        --faint:#8b8e94;
+        --line:#dcdad2;
+        --line-strong:#c6c4ba;
+        --accent:#d94f04;
+        --accent-hover:#bf4403;
+        --accent-ink:#ffffff;
+        --accent-soft:rgba(217,79,4,.09);
+        --good:#1c7c43;
+        --bad:#c62f2f;
+        --stage-bg:#101114;
+        --shadow:0 1px 2px rgba(20,20,20,.05),0 10px 30px -18px rgba(20,20,20,.25);
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#0b0d10;
+          --panel:#14171c;
+          --panel-2:#1b1f26;
+          --ink:#f2f3f5;
+          --muted:#9aa1ab;
+          --faint:#6d747e;
+          --line:#262b33;
+          --line-strong:#353c46;
+          --accent:#ff7a29;
+          --accent-hover:#ff8c47;
+          --accent-ink:#1a0e02;
+          --accent-soft:rgba(255,122,41,.12);
+          --good:#3fb96f;
+          --bad:#ff6b5e;
+          --stage-bg:#000000;
+          --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 34px -18px rgba(0,0,0,.7);
+          color-scheme: dark;
+        }
+      }
+      *{ box-sizing:border-box; }
+      html,body{ margin:0; padding:0; }
+      body{
+        background:var(--bg);
+        color:var(--ink);
+        font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+        -webkit-font-smoothing:antialiased;
+        line-height:1.45;
+      }
+      .mono{ font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; }
+      .wrap{ max-width:1180px; margin:0 auto; padding:22px clamp(14px,3vw,32px) 56px; }
+
+      /* ---------- intro ---------- */
+      .intro{ display:flex; align-items:flex-end; justify-content:space-between; gap:18px; flex-wrap:wrap; margin:6px 0 18px; }
+      .intro h1{ font-size:clamp(26px,4vw,38px); font-weight:800; letter-spacing:-.02em; margin:0; line-height:1.05; }
+      .intro h1 .hd{ color:var(--accent); }
+      .intro p{ margin:8px 0 0; color:var(--muted); font-size:15px; max-width:56ch; }
+      .intro .badge{
+        font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted);
+        border:1px solid var(--line); border-radius:999px; padding:7px 12px; background:var(--panel);
+        display:inline-flex; align-items:center; gap:8px; white-space:nowrap;
+      }
+      .intro .badge .dot{ width:8px; height:8px; border-radius:50%; background:var(--good); flex:none; }
+
+      /* ---------- layout ---------- */
+      .tool{ display:grid; grid-template-columns:minmax(0,1fr) 368px; gap:18px; align-items:start; }
+      @media (max-width:940px){ .tool{ grid-template-columns:1fr; } }
+      .card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+      .side{ display:flex; flex-direction:column; gap:18px; }
+      .panel-pad{ padding:18px; }
+      .panel-title{ font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+      .panel-title svg{ width:15px; height:15px; stroke:var(--accent); }
+
+      /* ---------- dropzone ---------- */
+      .stage-card{ overflow:hidden; }
+      .dropzone{
+        margin:14px; border:2px dashed var(--line-strong); border-radius:12px;
+        padding:clamp(30px,6vw,58px) 20px; text-align:center; cursor:pointer;
+        transition:border-color .15s, background .15s;
+      }
+      .dropzone:hover, .dropzone.drag{ border-color:var(--accent); background:var(--accent-soft); }
+      .dropzone .dz-icon{
+        width:60px; height:60px; margin:0 auto 14px; border-radius:16px;
+        background:var(--accent-soft); display:grid; place-items:center;
+      }
+      .dropzone .dz-icon svg{ width:30px; height:30px; stroke:var(--accent); }
+      .dropzone h2{ margin:0 0 6px; font-size:19px; font-weight:700; letter-spacing:-.01em; }
+      .dropzone p{ margin:0; color:var(--muted); font-size:13.5px; }
+      .dropzone .browse{ color:var(--accent); font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+      .dz-formats{ margin-top:16px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+      .dz-formats span{ font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--muted); border:1px solid var(--line); border-radius:6px; padding:3px 8px; }
+
+      /* ---------- stage / preview ---------- */
+      .stage-holder{ background:var(--stage-bg); padding:18px 14px 10px; display:none; }
+      .stage-holder.on{ display:block; }
+      .stage-view{
+        --split:50%; --ar:16/9;
+        position:relative; margin:0 auto;
+        width:min(100%, calc(62vh * var(--arn, 1.7778)));
+        aspect-ratio:var(--ar);
+        background:#000; border-radius:8px; overflow:hidden;
+        touch-action:none; user-select:none; -webkit-user-select:none;
+      }
+      .stage-view video, .stage-view .enh-wrap{ position:absolute; inset:0; width:100%; height:100%; }
+      .stage-view video{ object-fit:fill; display:block; }
+      .stage-view .enh-wrap{ clip-path:inset(0 0 0 var(--split)); }
+      .stage-view canvas{ width:100%; height:100%; display:block; }
+      .stage-view.no-compare .enh-wrap{ clip-path:none; }
+      .stage-view.no-compare .divider{ display:none; }
+      .tag{
+        position:absolute; top:10px; z-index:4; font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600;
+        letter-spacing:.06em; padding:4px 9px; border-radius:6px; background:rgba(0,0,0,.62); color:#fff; pointer-events:none;
+      }
+      .tag.orig{ left:10px; }
+      .tag.enh{ right:10px; background:var(--accent); color:#fff; }
+      @media (prefers-color-scheme: dark){ .tag.enh{ color:#1a0e02; } }
+      .divider{
+        position:absolute; top:0; bottom:0; left:var(--split); width:0; z-index:5; pointer-events:none;
+      }
+      .divider::before{ content:""; position:absolute; top:0; bottom:0; left:-1px; width:2px; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.25); }
+      .divider .grip{
+        position:absolute; top:50%; left:0; transform:translate(-50%,-50%);
+        width:34px; height:34px; border-radius:50%; background:#fff; color:#111;
+        display:grid; place-items:center; box-shadow:0 2px 10px rgba(0,0,0,.45);
+      }
+      .divider .grip svg{ width:18px; height:18px; }
+      .stage-view{ cursor:ew-resize; }
+
+      .transport{ display:flex; align-items:center; gap:12px; padding:12px 16px 16px; background:var(--stage-bg); }
+      .tbtn{
+        flex:none; width:40px; height:40px; border-radius:50%; border:1px solid rgba(255,255,255,.25);
+        background:rgba(255,255,255,.08); color:#fff; display:grid; place-items:center; cursor:pointer;
+      }
+      .tbtn:hover{ background:rgba(255,255,255,.16); }
+      .tbtn svg{ width:18px; height:18px; fill:#fff; }
+      .tbtn:disabled{ opacity:.4; cursor:default; }
+      .seek{ flex:1; }
+      .time-lab{ font-family:"IBM Plex Mono",monospace; font-size:12px; color:rgba(255,255,255,.85); white-space:nowrap; }
+      .transport-wrap{ display:none; }
+      .transport-wrap.on{ display:block; }
+      .compare-hint{ font-size:12px; color:var(--faint); text-align:center; padding:0 16px 14px; background:var(--stage-bg); margin-top:-6px; }
+      @media (prefers-color-scheme: dark){ .compare-hint{ color:#7d838c; } }
+
+      /* range inputs */
+      input[type="range"]{ -webkit-appearance:none; appearance:none; height:22px; background:transparent; cursor:pointer; width:100%; }
+      input[type="range"]::-webkit-slider-runnable-track{ height:5px; border-radius:99px; background:var(--line-strong); }
+      input[type="range"]::-webkit-slider-thumb{
+        -webkit-appearance:none; width:17px; height:17px; border-radius:50%; margin-top:-6px;
+        background:var(--panel); border:2px solid var(--accent); box-shadow:0 1px 4px rgba(0,0,0,.25);
+      }
+      input[type="range"]::-moz-range-track{ height:5px; border-radius:99px; background:var(--line-strong); }
+      input[type="range"]::-moz-range-thumb{ width:14px; height:14px; border-radius:50%; background:var(--panel); border:2px solid var(--accent); }
+      .seek input[type="range"]::-webkit-slider-runnable-track{ background:rgba(255,255,255,.3); }
+      .seek input[type="range"]::-moz-range-track{ background:rgba(255,255,255,.3); }
+      .seek input[type="range"]::-webkit-slider-thumb{ background:#fff; border-color:#fff; }
+      .seek input[type="range"]::-moz-range-thumb{ background:#fff; border-color:#fff; }
+      input[type="range"]:disabled{ opacity:.45; cursor:default; }
+
+      /* ---------- source info ---------- */
+      .file-row{ display:flex; gap:12px; align-items:flex-start; }
+      .file-thumb{
+        flex:none; width:44px; height:44px; border-radius:10px; background:var(--panel-2);
+        display:grid; place-items:center; border:1px solid var(--line);
+      }
+      .file-thumb svg{ width:22px; height:22px; stroke:var(--accent); }
+      .file-name{ font-weight:600; font-size:14px; word-break:break-all; line-height:1.3; }
+      .file-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+      .icon-btn{
+        margin-left:auto; flex:none; width:32px; height:32px; border-radius:8px; border:1px solid var(--line);
+        background:var(--panel); color:var(--muted); display:grid; place-items:center; cursor:pointer;
+      }
+      .icon-btn:hover{ color:var(--bad); border-color:var(--bad); }
+      .icon-btn svg{ width:15px; height:15px; }
+      .spec-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; }
+      .spec{ background:var(--panel-2); border-radius:10px; padding:9px 12px; }
+      .spec .k{ font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); font-weight:600; }
+      .spec .v{ font-family:"IBM Plex Mono",monospace; font-size:14.5px; font-weight:600; margin-top:2px; }
+      .spec .v.accent{ color:var(--accent); }
+
+      /* ---------- quality picker ---------- */
+      .q-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+      .q-btn{
+        text-align:left; border:1.5px solid var(--line); background:var(--panel); color:var(--ink);
+        border-radius:12px; padding:11px 13px; cursor:pointer; font-family:inherit;
+        display:flex; flex-direction:column; gap:1px; transition:border-color .12s, background .12s;
+      }
+      .q-btn:hover{ border-color:var(--line-strong); }
+      .q-btn.sel{ border-color:var(--accent); background:var(--accent-soft); }
+      .q-btn .q-name{ font-weight:700; font-size:15px; display:flex; align-items:center; gap:7px; }
+      .q-btn .q-res{ font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--muted); }
+      .q-btn .rec{ font-size:9.5px; font-weight:700; letter-spacing:.07em; background:var(--accent); color:var(--accent-ink); border-radius:4px; padding:2px 5px; }
+      .out-line{ margin-top:12px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--muted); display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+      .out-line b{ color:var(--ink); font-weight:600; }
+
+      /* ---------- sliders ---------- */
+      .slider-row{ display:grid; grid-template-columns:86px 1fr 40px; align-items:center; gap:10px; padding:5px 0; }
+      .slider-row label{ font-size:13.5px; font-weight:600; }
+      .slider-row .val{ font-family:"IBM Plex Mono",monospace; font-size:12.5px; text-align:right; color:var(--muted); }
+      .presets{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:8px; }
+      .preset{
+        font-family:inherit; font-size:12.5px; font-weight:600; padding:7px 12px; border-radius:999px;
+        border:1px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer;
+      }
+      .preset:hover{ border-color:var(--accent); color:var(--accent); }
+
+      /* ---------- convert ---------- */
+      .convert-btn{
+        width:100%; border:none; border-radius:12px; padding:15px 18px; cursor:pointer;
+        background:var(--accent); color:var(--accent-ink);
+        font-family:inherit; font-size:16px; font-weight:700; letter-spacing:.01em;
+        display:flex; align-items:center; justify-content:center; gap:10px;
+        transition:background .12s, transform .05s;
+      }
+      .convert-btn:hover:not(:disabled){ background:var(--accent-hover); }
+      .convert-btn:active:not(:disabled){ transform:scale(.99); }
+      .convert-btn:disabled{ opacity:.45; cursor:default; }
+      .convert-btn svg{ width:19px; height:19px; }
+      .fmt-row{ display:flex; gap:7px; margin-top:12px; }
+      .fmt-row .chip{
+        flex:1; text-align:center; font-family:"IBM Plex Mono",monospace; font-size:11.5px;
+        border:1px solid var(--line); border-radius:8px; padding:7px 4px; color:var(--muted); background:var(--panel-2);
+      }
+      .fmt-row .chip b{ color:var(--ink); display:block; font-size:12.5px; }
+      .proc-note{ font-size:12.5px; color:var(--muted); margin:11px 0 0; text-align:center; }
+
+      .progress-box{ display:none; margin-top:14px; }
+      .progress-box.on{ display:block; }
+      .pbar{ height:9px; border-radius:99px; background:var(--panel-2); overflow:hidden; border:1px solid var(--line); }
+      .pbar .fill{ height:100%; width:0%; background:var(--accent); border-radius:99px; transition:width .25s linear; }
+      .p-meta{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:12.5px; color:var(--muted); }
+      .p-meta .pct{ font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--ink); }
+      .cancel-btn{
+        font-family:inherit; font-size:12.5px; font-weight:600; background:none; border:1px solid var(--line);
+        color:var(--muted); border-radius:8px; padding:5px 11px; cursor:pointer;
+      }
+      .cancel-btn:hover{ color:var(--bad); border-color:var(--bad); }
+
+      /* ---------- result ---------- */
+      .result-card{ display:none; border-color:var(--good); }
+      .result-card.on{ display:block; }
+      .result-head{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+      .result-head .ok{
+        width:34px; height:34px; border-radius:50%; flex:none; display:grid; place-items:center;
+        background:rgba(28,124,67,.12); color:var(--good);
+      }
+      .result-head .ok svg{ width:18px; height:18px; }
+      .result-head h3{ margin:0; font-size:16.5px; font-weight:700; }
+      .result-card video{ width:100%; border-radius:10px; background:#000; margin-top:10px; display:block; max-height:300px; }
+      .dl-btn{
+        margin-top:14px; width:100%; display:flex; align-items:center; justify-content:center; gap:9px;
+        background:var(--good); color:#fff; text-decoration:none; font-weight:700; font-size:15px;
+        border-radius:12px; padding:13px 16px;
+      }
+      @media (prefers-color-scheme: dark){ .dl-btn{ color:#06230f; } }
+      .dl-btn svg{ width:18px; height:18px; }
+      .again-btn{
+        margin-top:9px; width:100%; background:none; border:1px solid var(--line); color:var(--ink);
+        font-family:inherit; font-weight:600; font-size:13.5px; border-radius:12px; padding:11px; cursor:pointer;
+      }
+      .again-btn:hover{ border-color:var(--line-strong); }
+
+      .error-box{
+        display:none; margin-top:14px; border:1px solid var(--bad); color:var(--bad);
+        background:rgba(198,47,47,.07); border-radius:10px; padding:11px 13px; font-size:13.5px;
+      }
+      .error-box.on{ display:block; }
+
+      .empty-hint{ color:var(--faint); font-size:13.5px; text-align:center; padding:8px 4px 2px; }
+
+      /* ---------- steps ---------- */
+      .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:18px; }
+      @media (max-width:940px){ .steps{ grid-template-columns:1fr; } }
+      .step{ padding:18px; }
+      .step .num{ font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--accent); letter-spacing:.1em; }
+      .step h3{ margin:7px 0 5px; font-size:15.5px; font-weight:700; }
+      .step p{ margin:0; font-size:13.5px; color:var(--muted); }
+      .foot-note{ margin-top:18px; font-size:12.5px; color:var(--faint); text-align:center; }
+
+      [hidden]{ display:none !important; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="intro">
+        <div>
+          <h1>Low quality video in.<br /><span class="hd">HD video out.</span></h1>
+          <p>Drop in a blurry or low-resolution video, sharpen and clean it up, and export it in HD — up to 4K. Everything runs right here in your browser.</p>
+        </div>
+        <span class="badge"><span class="dot"></span> Runs 100% in your browser</span>
+      </div>
+
+      <div class="tool">
+        <!-- ============ STAGE ============ -->
+        <section class="card stage-card" aria-label="Video preview">
+          <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload a video">
+            <div class="dz-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4L8 8"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+            </div>
+            <h2>Drop your video here</h2>
+            <p>or <span class="browse">browse your files</span> — the video never leaves your device</p>
+            <div class="dz-formats"><span>MP4</span><span>WebM</span><span>MOV</span><span>M4V</span></div>
+          </div>
+          <input type="file" id="fileInput" accept="video/*" hidden />
+
+          <div class="stage-holder" id="stageHolder">
+            <div class="stage-view" id="stageView">
+              <video id="srcVideo" playsinline preload="auto"></video>
+              <div class="enh-wrap"><canvas id="glCanvas" width="2" height="2"></canvas></div>
+              <span class="tag orig" id="tagOrig">ORIGINAL</span>
+              <span class="tag enh" id="tagEnh">ENHANCED</span>
+              <div class="divider" id="divider">
+                <div class="grip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 7 4 12l4.5 5M15.5 7 20 12l-4.5 5"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="transport-wrap" id="transportWrap">
+            <div class="transport">
+              <button class="tbtn" id="playBtn" aria-label="Play or pause">
+                <svg id="playIcon" viewBox="0 0 24 24"><path d="M7 4.8v14.4c0 .8.9 1.3 1.6.9l11-7.2c.6-.4.6-1.3 0-1.7l-11-7.2c-.7-.5-1.6 0-1.6.8Z"/></svg>
+                <svg id="pauseIcon" viewBox="0 0 24 24" hidden><path d="M6.5 4h3.6v16H6.5zM13.9 4h3.6v16h-3.6z"/></svg>
+              </button>
+              <div class="seek"><input type="range" id="seekRange" min="0" max="1000" value="0" aria-label="Seek" /></div>
+              <span class="time-lab mono" id="timeLab">0:00 / 0:00</span>
+            </div>
+            <p class="compare-hint">Drag across the preview to compare original vs enhanced</p>
+          </div>
+        </section>
+
+        <!-- ============ SIDE PANEL ============ -->
+        <div class="side">
+          <section class="card panel-pad" id="sourceCard" hidden>
+            <h2 class="panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5v14M16 5v14"/></svg>
+              Your video
+            </h2>
+            <div class="file-row">
+              <div class="file-thumb">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9.5 5 2.5-5 2.5z" fill="currentColor" stroke="none"/></svg>
+              </div>
+              <div style="min-width:0">
+                <div class="file-name" id="fileName">—</div>
+                <div class="file-sub" id="fileSub">—</div>
+              </div>
+              <button class="icon-btn" id="removeBtn" aria-label="Remove video" title="Remove video">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              </button>
+            </div>
+            <div class="spec-grid">
+              <div class="spec"><div class="k">Resolution</div><div class="v" id="specRes">—</div></div>
+              <div class="spec"><div class="k">Duration</div><div class="v" id="specDur">—</div></div>
+              <div class="spec"><div class="k">File size</div><div class="v" id="specSize">—</div></div>
+              <div class="spec"><div class="k">Upscale</div><div class="v accent" id="specScale">—</div></div>
+            </div>
+          </section>
+
+          <section class="card panel-pad" id="settingsCard">
+            <h2 class="panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg>
+              Output quality
+            </h2>
+            <div class="q-grid" id="qGrid" role="radiogroup" aria-label="Output quality">
+              <button class="q-btn" data-target="720" role="radio" aria-checked="false"><span class="q-name">HD 720p</span><span class="q-res" data-res>—</span></button>
+              <button class="q-btn" data-target="1080" role="radio" aria-checked="false"><span class="q-name">Full HD 1080p</span><span class="q-res" data-res>—</span></button>
+              <button class="q-btn" data-target="1440" role="radio" aria-checked="false"><span class="q-name">QHD 1440p</span><span class="q-res" data-res>—</span></button>
+              <button class="q-btn" data-target="2160" role="radio" aria-checked="false"><span class="q-name">4K 2160p</span><span class="q-res" data-res>—</span></button>
+            </div>
+            <div class="out-line"><span>Output size</span><b id="outDims">Add a video first</b></div>
+
+            <h2 class="panel-title" style="margin-top:22px">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3.2"/></svg>
+              Enhancement
+            </h2>
+            <div class="presets" id="presets">
+              <button class="preset" data-preset="auto">Auto Enhance</button>
+              <button class="preset" data-preset="vivid">Vivid</button>
+              <button class="preset" data-preset="restore">Restore Old Video</button>
+              <button class="preset" data-preset="reset">Reset</button>
+            </div>
+            <div id="sliders">
+              <div class="slider-row"><label for="sSharpen">Sharpen</label><input type="range" id="sSharpen" min="0" max="100" value="35" /><span class="val" data-val>35</span></div>
+              <div class="slider-row"><label for="sDenoise">Denoise</label><input type="range" id="sDenoise" min="0" max="100" value="15" /><span class="val" data-val>15</span></div>
+              <div class="slider-row"><label for="sBright">Brightness</label><input type="range" id="sBright" min="-50" max="50" value="0" /><span class="val" data-val>0</span></div>
+              <div class="slider-row"><label for="sContrast">Contrast</label><input type="range" id="sContrast" min="-50" max="50" value="8" /><span class="val" data-val>8</span></div>
+              <div class="slider-row"><label for="sSaturation">Saturation</label><input type="range" id="sSaturation" min="-50" max="50" value="10" /><span class="val" data-val>10</span></div>
+            </div>
+
+            <button class="convert-btn" id="convertBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>
+              <span id="convertLab">Convert to HD</span>
+            </button>
+            <div class="fmt-row">
+              <div class="chip">Format<b id="fmtLab">WebM · VP9</b></div>
+              <div class="chip">Speed<b>Real-time</b></div>
+              <div class="chip">Audio<b>Kept as-is</b></div>
+            </div>
+            <p class="proc-note" id="procNote">Conversion plays the video through once at full quality — a 1-minute video takes about 1 minute. Keep this tab open while it runs.</p>
+
+            <div class="progress-box" id="progressBox">
+              <div class="pbar"><div class="fill" id="pFill"></div></div>
+              <div class="p-meta">
+                <span id="pStatus">Converting…</span>
+                <span style="display:flex;align-items:center;gap:10px"><span class="pct" id="pPct">0%</span><button class="cancel-btn" id="cancelBtn">Cancel</button></span>
+              </div>
+            </div>
+            <div class="error-box" id="errorBox" role="alert"></div>
+            <p class="empty-hint" id="emptyHint">Add a video to unlock quality and enhancement settings.</p>
+          </section>
+
+          <section class="card panel-pad result-card" id="resultCard">
+            <div class="result-head">
+              <span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></svg></span>
+              <h3>Your HD video is ready</h3>
+            </div>
+            <div class="spec-grid" style="margin-top:8px">
+              <div class="spec"><div class="k">New resolution</div><div class="v accent" id="resRes">—</div></div>
+              <div class="spec"><div class="k">New size</div><div class="v" id="resSize">—</div></div>
+            </div>
+            <video id="resultVideo" controls playsinline></video>
+            <a class="dl-btn" id="dlBtn" href="#" download>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0 4-4m-4 4-4-4"/><path d="M4 19h16"/></svg>
+              Download HD video
+            </a>
+            <button class="again-btn" id="againBtn">Convert another video</button>
+          </section>
+        </div>
+      </div>
+
+      <!-- ============ STEPS ============ -->
+      <div class="steps">
+        <div class="card step"><div class="num">STEP 01</div><h3>Add your video</h3><p>Any clip your browser can play — phone recordings, old downloads, screen captures. It is read straight from your device, never uploaded anywhere.</p></div>
+        <div class="card step"><div class="num">STEP 02</div><h3>Pick HD quality &amp; enhance</h3><p>Choose 720p, 1080p, 1440p or 4K, then tune sharpening, denoise and colour. Drag the preview divider to see the difference live.</p></div>
+        <div class="card step"><div class="num">STEP 03</div><h3>Convert &amp; download</h3><p>The video is re-rendered frame by frame at the new resolution with your enhancements baked in, audio included. Download the finished file.</p></div>
+      </div>
+      <p class="foot-note">Tip: for the best result, pick an output one or two steps above the original — for example 360p → 1080p, or 720p → 1440p.</p>
+    </div>
+
+    <script>
+    (function(){
+      "use strict";
+      var $ = function(s){ return document.querySelector(s); };
+
+      /* ---------------- elements ---------------- */
+      var dropzone = $('#dropzone'), fileInput = $('#fileInput');
+      var stageHolder = $('#stageHolder'), stageView = $('#stageView'), video = $('#srcVideo'), canvas = $('#glCanvas');
+      var transportWrap = $('#transportWrap'), playBtn = $('#playBtn'), playIcon = $('#playIcon'), pauseIcon = $('#pauseIcon');
+      var seekRange = $('#seekRange'), timeLab = $('#timeLab');
+      var sourceCard = $('#sourceCard'), fileNameEl = $('#fileName'), fileSubEl = $('#fileSub'), removeBtn = $('#removeBtn');
+      var specRes = $('#specRes'), specDur = $('#specDur'), specSize = $('#specSize'), specScale = $('#specScale');
+      var qGrid = $('#qGrid'), outDims = $('#outDims'), tagOrig = $('#tagOrig'), tagEnh = $('#tagEnh');
+      var convertBtn = $('#convertBtn'), convertLab = $('#convertLab'), fmtLab = $('#fmtLab');
+      var progressBox = $('#progressBox'), pFill = $('#pFill'), pStatus = $('#pStatus'), pPct = $('#pPct'), cancelBtn = $('#cancelBtn');
+      var errorBox = $('#errorBox'), emptyHint = $('#emptyHint'), procNote = $('#procNote');
+      var resultCard = $('#resultCard'), resultVideo = $('#resultVideo'), resRes = $('#resRes'), resSize = $('#resSize'), dlBtn = $('#dlBtn'), againBtn = $('#againBtn');
+
+      /* ---------------- state ---------------- */
+      var DEFAULTS = { sharpen:35, denoise:15, brightness:0, contrast:8, saturation:10 };
+      var PRESETS = {
+        auto:    { sharpen:45, denoise:20, brightness:4,  contrast:12, saturation:14 },
+        vivid:   { sharpen:30, denoise:10, brightness:2,  contrast:10, saturation:38 },
+        restore: { sharpen:55, denoise:45, brightness:6,  contrast:14, saturation:6  },
+        reset:   DEFAULTS
+      };
+      var settings = Object.assign({}, DEFAULTS);
+      var state = {
+        file:null, url:null, name:'', w:0, h:0, dur:0, size:0,
+        target:1080, mode:'empty', /* empty | ready | processing | done */
+        cancelled:false
+      };
+      var out = { w:0, h:0 };
+
+      /* ---------------- helpers ---------------- */
+      function fmtTime(s){
+        if(!isFinite(s) || s == null) return '—';
+        s = Math.max(0, Math.round(s));
+        var m = Math.floor(s/60), r = s%60;
+        return m + ':' + (r < 10 ? '0' : '') + r;
+      }
+      function fmtSize(b){
+        if(!b && b !== 0) return '—';
+        var u = ['B','KB','MB','GB'], i = 0, n = b;
+        while(n >= 1024 && i < u.length-1){ n /= 1024; i++; }
+        return (i === 0 ? n : n.toFixed(1)) + ' ' + u[i];
+      }
+      function showError(msg){ errorBox.textContent = msg; errorBox.classList.add('on'); }
+      function hideError(){ errorBox.classList.remove('on'); errorBox.textContent = ''; }
+
+      /* ---------------- WebGL enhancement ---------------- */
+      var gl = null, glReady = false, uLoc = {};
+      function initGL(){
+        try{
+          gl = canvas.getContext('webgl', { preserveDrawingBuffer:true, antialias:false }) ||
+               canvas.getContext('experimental-webgl');
+        }catch(e){ gl = null; }
+        if(!gl) return false;
+        var vsrc = 'attribute vec2 aPos; varying vec2 vUv;' +
+          'void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }';
+        var fsrc = 'precision mediump float; varying vec2 vUv; uniform sampler2D uTex;' +
+          'uniform vec2 uTexel; uniform float uSharpen; uniform float uDenoise;' +
+          'uniform float uBright; uniform float uContrast; uniform float uSat;' +
+          'void main(){' +
+          '  vec3 c = texture2D(uTex, vUv).rgb;' +
+          '  vec3 blur = c;' +
+          '  blur += texture2D(uTex, vUv + vec2(uTexel.x, 0.0)).rgb;' +
+          '  blur += texture2D(uTex, vUv - vec2(uTexel.x, 0.0)).rgb;' +
+          '  blur += texture2D(uTex, vUv + vec2(0.0, uTexel.y)).rgb;' +
+          '  blur += texture2D(uTex, vUv - vec2(0.0, uTexel.y)).rgb;' +
+          '  blur /= 5.0;' +
+          '  c = mix(c, blur, uDenoise);' +
+          '  c += (c - blur) * uSharpen * 2.2;' +
+          '  c += uBright;' +
+          '  c = (c - 0.5) * uContrast + 0.5;' +
+          '  float l = dot(c, vec3(0.299, 0.587, 0.114));' +
+          '  c = mix(vec3(l), c, uSat);' +
+          '  gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);' +
+          '}';
+        function sh(type, src){
+          var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+          if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){ gl.deleteShader(s); return null; }
+          return s;
+        }
+        var vs = sh(gl.VERTEX_SHADER, vsrc), fs = sh(gl.FRAGMENT_SHADER, fsrc);
+        if(!vs || !fs) return false;
+        var prog = gl.createProgram();
+        gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+        if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
+        gl.useProgram(prog);
+        var buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+        var aPos = gl.getAttribLocation(prog, 'aPos');
+        gl.enableVertexAttribArray(aPos);
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+        var tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        ['uTexel','uSharpen','uDenoise','uBright','uContrast','uSat'].forEach(function(n){
+          uLoc[n] = gl.getUniformLocation(prog, n);
+        });
+        gl.uniform1i(gl.getUniformLocation(prog, 'uTex'), 0);
+        return true;
+      }
+      glReady = initGL();
+
+      function drawFrame(){
+        if(!glReady || !state.w || video.readyState < 2) return;
+        if(canvas.width !== out.w || canvas.height !== out.h){
+          canvas.width = out.w; canvas.height = out.h;
+        }
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        try{
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+        }catch(e){ return; }
+        gl.uniform2f(uLoc.uTexel, 1/Math.max(1,state.w), 1/Math.max(1,state.h));
+        gl.uniform1f(uLoc.uSharpen, settings.sharpen/100);
+        gl.uniform1f(uLoc.uDenoise, (settings.denoise/100) * 0.85);
+        gl.uniform1f(uLoc.uBright, (settings.brightness/100) * 0.55);
+        gl.uniform1f(uLoc.uContrast, 1 + settings.contrast/100);
+        gl.uniform1f(uLoc.uSat, 1 + settings.saturation/100);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+
+      var rafId = null;
+      function loop(){
+        drawFrame();
+        if(!video.paused && !video.ended){ rafId = requestAnimationFrame(loop); }
+        else { rafId = null; }
+      }
+      function kickLoop(){
+        if(rafId == null && !video.paused && !video.ended){ rafId = requestAnimationFrame(loop); }
+      }
+
+      /* ---------------- output sizing ---------------- */
+      function computeOutput(t){
+        var sw = state.w, sh = state.h;
+        if(!sw || !sh) return { w:0, h:0 };
+        var scale = t / Math.min(sw, sh);
+        var w = Math.round(sw*scale), h = Math.round(sh*scale);
+        w -= w % 2; h -= h % 2;
+        var maxPx = 3840 * 2160;
+        if(w*h > maxPx){
+          var s = Math.sqrt(maxPx/(w*h));
+          w = Math.floor(w*s/2)*2; h = Math.floor(h*s/2)*2;
+        }
+        return { w:Math.max(2,w), h:Math.max(2,h) };
+      }
+      function targetName(t){
+        return t === 720 ? 'HD 720p' : t === 1080 ? 'Full HD 1080p' : t === 1440 ? 'QHD 1440p' : '4K 2160p';
+      }
+      function recommendedTarget(){
+        var se = Math.min(state.w, state.h);
+        var opts = [720, 1080, 1440, 2160], i;
+        for(i = 0; i < opts.length; i++){ if(opts[i] > se) return opts[i]; }
+        return 2160;
+      }
+
+      function refreshQualityUI(){
+        var rec = state.w ? recommendedTarget() : 0;
+        var btns = qGrid.querySelectorAll('.q-btn');
+        btns.forEach(function(b){
+          var t = parseInt(b.getAttribute('data-target'), 10);
+          var sel = t === state.target;
+          b.classList.toggle('sel', sel);
+          b.setAttribute('aria-checked', sel ? 'true' : 'false');
+          var nameEl = b.querySelector('.q-name');
+          if(state.w){
+            var o = computeOutput(t);
+            b.querySelector('[data-res]').textContent = o.w + ' × ' + o.h;
+            if(t === rec && !nameEl.querySelector('.rec')){
+              var s = document.createElement('span'); s.className = 'rec'; s.textContent = 'BEST';
+              nameEl.appendChild(s);
+            } else if(t !== rec){
+              var r = nameEl.querySelector('.rec'); if(r) r.remove();
+            }
+          } else {
+            b.querySelector('[data-res]').textContent = '—';
+          }
+        });
+        out = computeOutput(state.target);
+        if(state.w){
+          outDims.textContent = out.w + ' × ' + out.h + ' px';
+          var f = (Math.min(out.w,out.h) / Math.min(state.w,state.h));
+          specScale.textContent = (Math.round(f*10)/10) + '×';
+          tagEnh.textContent = 'ENHANCED · ' + out.h + 'p';
+          tagOrig.textContent = 'ORIGINAL · ' + state.h + 'p';
+        } else {
+          outDims.textContent = 'Add a video first';
+        }
+        convertLab.textContent = 'Convert to ' + targetName(state.target);
+      }
+
+      qGrid.addEventListener('click', function(e){
+        var b = e.target.closest('.q-btn');
+        if(!b || state.mode === 'processing') return;
+        state.target = parseInt(b.getAttribute('data-target'), 10);
+        refreshQualityUI();
+        drawFrame();
+      });
+
+      /* ---------------- sliders & presets ---------------- */
+      var SLIDERS = [
+        { id:'sSharpen', key:'sharpen' }, { id:'sDenoise', key:'denoise' },
+        { id:'sBright', key:'brightness' }, { id:'sContrast', key:'contrast' },
+        { id:'sSaturation', key:'saturation' }
+      ];
+      function applySettings(obj){
+        settings = Object.assign({}, obj);
+        SLIDERS.forEach(function(s){
+          var inp = document.getElementById(s.id);
+          inp.value = settings[s.key];
+          inp.parentNode.querySelector('[data-val]').textContent = settings[s.key];
+        });
+        drawFrame();
+      }
+      SLIDERS.forEach(function(s){
+        var inp = document.getElementById(s.id);
+        inp.addEventListener('input', function(){
+          settings[s.key] = parseInt(inp.value, 10);
+          inp.parentNode.querySelector('[data-val]').textContent = inp.value;
+          drawFrame();
+        });
+      });
+      $('#presets').addEventListener('click', function(e){
+        var b = e.target.closest('[data-preset]');
+        if(!b || state.mode === 'processing') return;
+        applySettings(PRESETS[b.getAttribute('data-preset')]);
+      });
+
+      /* ---------------- file loading ---------------- */
+      function loadFile(file){
+        if(state.mode === 'processing') return;
+        if(!file) return;
+        if(file.type && file.type.indexOf('video/') !== 0){
+          showError('That file is not a video. Please choose an MP4, WebM or MOV video.');
+          return;
+        }
+        hideError();
+        if(state.url) URL.revokeObjectURL(state.url);
+        if(resultUrl){ URL.revokeObjectURL(resultUrl); resultUrl = null; }
+        resultCard.classList.remove('on');
+        state.file = file;
+        state.name = file.name || 'video';
+        state.size = file.size || 0;
+        state.url = URL.createObjectURL(file);
+        state.mode = 'loading';
+        video.src = state.url;
+        video.load();
+      }
+
+      video.addEventListener('loadedmetadata', function(){
+        state.w = video.videoWidth; state.h = video.videoHeight;
+        state.dur = video.duration;
+        if(!state.w || !state.h){
+          showError('Could not read this video. It may be in a format the browser cannot play — MP4 (H.264) works best.');
+          return;
+        }
+        state.mode = 'ready';
+        state.target = recommendedTarget();
+        dropzone.hidden = true;
+        stageHolder.classList.add('on');
+        transportWrap.classList.add('on');
+        sourceCard.hidden = false;
+        emptyHint.hidden = true;
+        stageView.style.setProperty('--ar', state.w + ' / ' + state.h);
+        stageView.style.setProperty('--arn', (state.w/state.h).toFixed(4));
+        fileNameEl.textContent = state.name;
+        fileSubEl.textContent = state.file && state.file.type ? state.file.type.replace('video/','').toUpperCase() + ' video' : 'Video file';
+        specRes.textContent = state.w + ' × ' + state.h;
+        specDur.textContent = fmtTime(state.dur);
+        specSize.textContent = fmtSize(state.size);
+        convertBtn.disabled = false;
+        refreshQualityUI();
+        updateTransport();
+      });
+      video.addEventListener('loadeddata', drawFrame);
+      video.addEventListener('seeked', drawFrame);
+      video.addEventListener('error', function(){
+        if(!state.url || state.mode === 'empty') return;
+        resetAll();
+        showError('This video could not be played by your browser. Try an MP4 or WebM version of the file.');
+      });
+
+      dropzone.addEventListener('click', function(){ fileInput.click(); });
+      dropzone.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fileInput.click(); }
+      });
+      fileInput.addEventListener('change', function(){
+        if(fileInput.files && fileInput.files[0]) loadFile(fileInput.files[0]);
+        fileInput.value = '';
+      });
+      ['dragenter','dragover'].forEach(function(ev){
+        document.addEventListener(ev, function(e){ e.preventDefault(); dropzone.classList.add('drag'); });
+      });
+      ['dragleave','drop'].forEach(function(ev){
+        document.addEventListener(ev, function(e){ e.preventDefault(); if(ev === 'dragleave' && e.relatedTarget) return; dropzone.classList.remove('drag'); });
+      });
+      document.addEventListener('drop', function(e){
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if(f) loadFile(f);
+      });
+      removeBtn.addEventListener('click', resetAll);
+      againBtn.addEventListener('click', resetAll);
+
+      function resetAll(){
+        if(state.mode === 'processing') return;
+        video.pause();
+        if(state.url) URL.revokeObjectURL(state.url);
+        if(resultUrl){ URL.revokeObjectURL(resultUrl); resultUrl = null; }
+        video.removeAttribute('src'); video.load();
+        resultVideo.removeAttribute('src'); resultVideo.load();
+        state = { file:null, url:null, name:'', w:0, h:0, dur:0, size:0, target:1080, mode:'empty', cancelled:false };
+        dropzone.hidden = false;
+        stageHolder.classList.remove('on');
+        transportWrap.classList.remove('on');
+        sourceCard.hidden = true;
+        resultCard.classList.remove('on');
+        progressBox.classList.remove('on');
+        emptyHint.hidden = false;
+        convertBtn.disabled = true;
+        hideError();
+        refreshQualityUI();
+      }
+
+      /* ---------------- transport ---------------- */
+      function updateTransport(){
+        var d = isFinite(video.duration) ? video.duration : 0;
+        timeLab.textContent = fmtTime(video.currentTime) + ' / ' + fmtTime(d || state.dur);
+        if(d > 0 && state.mode !== 'processing'){
+          seekRange.value = Math.round((video.currentTime/d)*1000);
+        }
+        var playing = !video.paused && !video.ended;
+        playIcon.hidden = playing; pauseIcon.hidden = !playing;
+      }
+      playBtn.addEventListener('click', function(){
+        if(state.mode === 'processing') return;
+        if(video.paused || video.ended){ video.play(); } else { video.pause(); }
+      });
+      seekRange.addEventListener('input', function(){
+        if(state.mode === 'processing') return;
+        var d = video.duration;
+        if(isFinite(d) && d > 0){ video.currentTime = (seekRange.value/1000)*d; }
+      });
+      video.addEventListener('play', function(){ kickLoop(); updateTransport(); });
+      video.addEventListener('pause', updateTransport);
+      video.addEventListener('timeupdate', function(){
+        updateTransport();
+        if(state.mode === 'processing' && isFinite(video.duration) && video.duration > 0){
+          var pct = Math.min(100, Math.round((video.currentTime/video.duration)*100));
+          pFill.style.width = pct + '%';
+          pPct.textContent = pct + '%';
+        }
+      });
+      video.addEventListener('ended', function(){
+        updateTransport();
+        if(state.mode === 'processing'){
+          setTimeout(function(){
+            if(recorder && recorder.state !== 'inactive'){ try{ recorder.stop(); }catch(e){} }
+          }, 400);
+        }
+      });
+
+      /* ---------------- compare drag ---------------- */
+      var dragging = false;
+      function setSplit(clientX){
+        var r = stageView.getBoundingClientRect();
+        if(r.width === 0) return;
+        var p = ((clientX - r.left)/r.width)*100;
+        p = Math.max(3, Math.min(97, p));
+        stageView.style.setProperty('--split', p + '%');
+      }
+      stageView.addEventListener('pointerdown', function(e){
+        if(state.mode === 'processing') return;
+        dragging = true;
+        try{ stageView.setPointerCapture(e.pointerId); }catch(err){}
+        setSplit(e.clientX);
+      });
+      stageView.addEventListener('pointermove', function(e){ if(dragging) setSplit(e.clientX); });
+      ['pointerup','pointercancel'].forEach(function(ev){
+        stageView.addEventListener(ev, function(){ dragging = false; });
+      });
+
+      /* ---------------- conversion ---------------- */
+      var recorder = null, chunks = [], resultUrl = null;
+      var audioCtx = null, mediaNode = null, audioDest = null;
+      var activeMime = null;
+
+      var MIMES = [
+        { t:'video/webm;codecs=vp9,opus', ext:'webm', label:'WebM · VP9' },
+        { t:'video/webm;codecs=vp8,opus', ext:'webm', label:'WebM · VP8' },
+        { t:'video/webm', ext:'webm', label:'WebM' },
+        { t:'video/mp4', ext:'mp4', label:'MP4' }
+      ];
+      function pickMime(){
+        if(typeof MediaRecorder === 'undefined') return null;
+        for(var i = 0; i < MIMES.length; i++){
+          try{ if(MediaRecorder.isTypeSupported(MIMES[i].t)) return MIMES[i]; }catch(e){}
+        }
+        return null;
+      }
+      var firstMime = pickMime();
+      if(firstMime) fmtLab.textContent = firstMime.label;
+
+      function setControlsEnabled(on){
+        qGrid.querySelectorAll('.q-btn').forEach(function(b){ b.disabled = !on; });
+        SLIDERS.forEach(function(s){ document.getElementById(s.id).disabled = !on; });
+        $('#presets').querySelectorAll('.preset').forEach(function(b){ b.disabled = !on; });
+        playBtn.disabled = !on; seekRange.disabled = !on; removeBtn.disabled = !on;
+        convertBtn.disabled = !on || !state.w;
+      }
+
+      function ensureAudio(){
+        if(audioCtx || typeof window.AudioContext === 'undefined' && typeof window.webkitAudioContext === 'undefined') return;
+        if(audioCtx) return;
+        try{
+          var AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          mediaNode = audioCtx.createMediaElementSource(video);
+          mediaNode.connect(audioCtx.destination);
+        }catch(e){ audioCtx = null; mediaNode = null; }
+      }
+
+      function cleanupAudioDest(){
+        if(audioDest && mediaNode){
+          try{ mediaNode.disconnect(audioDest); }catch(e){}
+        }
+        audioDest = null;
+      }
+
+      function finishProcessingUI(){
+        progressBox.classList.remove('on');
+        setControlsEnabled(true);
+        stageView.classList.remove('no-compare');
+        state.mode = state.w ? 'ready' : 'empty';
+      }
+
+      convertBtn.addEventListener('click', function(){
+        if(!state.w || state.mode === 'processing') return;
+        hideError();
+        resultCard.classList.remove('on');
+        if(resultUrl){ URL.revokeObjectURL(resultUrl); resultUrl = null; }
+
+        var mime = pickMime();
+        if(!mime){
+          showError('This browser cannot record video, so conversion is not available here. Please try Chrome or Edge on a computer.');
+          return;
+        }
+        if(!glReady){
+          showError('WebGL is not available in this browser, so the enhancement engine cannot start. Please try Chrome or Edge.');
+          return;
+        }
+        activeMime = mime;
+        out = computeOutput(state.target);
+        drawFrame();
+
+        ensureAudio();
+        if(audioCtx && audioCtx.state === 'suspended'){ audioCtx.resume(); }
+
+        var stream = null;
+        try{ stream = canvas.captureStream(30); }catch(e){ stream = null; }
+        if(!stream){
+          showError('Could not capture the enhanced video stream in this browser. Please try Chrome or Edge.');
+          return;
+        }
+        if(audioCtx && mediaNode){
+          try{
+            audioDest = audioCtx.createMediaStreamDestination();
+            mediaNode.connect(audioDest);
+            var at = audioDest.stream.getAudioTracks();
+            if(at && at[0]) stream.addTrack(at[0]);
+          }catch(e){ cleanupAudioDest(); }
+        }
+
+        var bps = Math.round(Math.min(45000000, Math.max(2500000, out.w * out.h * 30 * 0.28)));
+        try{
+          recorder = new MediaRecorder(stream, {
+            mimeType: mime.t, videoBitsPerSecond: bps, audioBitsPerSecond: 192000
+          });
+        }catch(e){
+          try{ recorder = new MediaRecorder(stream, { mimeType: mime.t }); }
+          catch(e2){
+            cleanupAudioDest();
+            showError('Could not start the video recorder in this browser. Please try Chrome or Edge.');
+            return;
+          }
+        }
+        chunks = [];
+        state.cancelled = false;
+        recorder.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
+        recorder.onstop = onRecorderStop;
+
+        state.mode = 'processing';
+        setControlsEnabled(false);
+        convertBtn.disabled = true;
+        progressBox.classList.add('on');
+        pFill.style.width = '0%'; pPct.textContent = '0%';
+        pStatus.textContent = 'Converting to ' + targetName(state.target) + '…';
+        stageView.classList.add('no-compare');
+        procNote.hidden = true;
+
+        video.pause();
+        try{ video.currentTime = 0; }catch(e){}
+        var started = false;
+        function begin(){
+          if(started) return; started = true;
+          try{ recorder.start(250); }catch(e){
+            cleanupAudioDest(); finishProcessingUI(); procNote.hidden = false;
+            showError('The recorder failed to start. Please try again.');
+            return;
+          }
+          kickLoop();
+          var p = video.play();
+          if(p && p.catch) p.catch(function(){
+            if(recorder && recorder.state !== 'inactive'){ state.cancelled = true; try{ recorder.stop(); }catch(e){} }
+          });
+        }
+        if(Math.abs(video.currentTime) < 0.05){ begin(); }
+        else {
+          var onSeek = function(){ video.removeEventListener('seeked', onSeek); begin(); };
+          video.addEventListener('seeked', onSeek);
+          setTimeout(begin, 600);
+        }
+      });
+
+      function onRecorderStop(){
+        cleanupAudioDest();
+        video.pause();
+        var wasCancelled = state.cancelled;
+        state.cancelled = false;
+        finishProcessingUI();
+        procNote.hidden = false;
+        if(wasCancelled){
+          pStatus.textContent = 'Cancelled';
+          return;
+        }
+        var blob = new Blob(chunks, { type: activeMime ? activeMime.t.split(';')[0] : 'video/webm' });
+        chunks = [];
+        if(!blob.size){
+          showError('The conversion came out empty — the video may be protected or in an unsupported format. Try a different file.');
+          return;
+        }
+        resultUrl = URL.createObjectURL(blob);
+        resultVideo.src = resultUrl;
+        resRes.textContent = out.w + ' × ' + out.h + ' (' + targetName(state.target) + ')';
+        resSize.textContent = fmtSize(blob.size) + ' · was ' + fmtSize(state.size);
+        var base = state.name.replace(/\.[^.]+$/, '') || 'video';
+        dlBtn.href = resultUrl;
+        dlBtn.setAttribute('download', base + '-hd-' + out.w + 'x' + out.h + '.' + (activeMime ? activeMime.ext : 'webm'));
+        resultCard.classList.add('on');
+        state.mode = 'done';
+        resultCard.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      }
+
+      cancelBtn.addEventListener('click', function(){
+        if(state.mode !== 'processing') return;
+        state.cancelled = true;
+        video.pause();
+        if(recorder && recorder.state !== 'inactive'){ try{ recorder.stop(); }catch(e){} }
+        else { cleanupAudioDest(); finishProcessingUI(); procNote.hidden = false; }
+      });
+
+      refreshQualityUI();
+    })();
+    </script>
+  </body>
+</html>
